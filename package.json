@@ -1,5 +1,5 @@
 {
-  "name": "Object Detection",
+  "name": "object-detection",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -48,9 +48,9 @@
     "lucide-react": "^0.454.0",
     "next": "^14.2.23",
     "next-themes": "^0.4.4",
-    "react": "^18",
+    "react": "^19.0.0",
     "react-day-picker": "8.10.1",
-    "react-dom": "^18",
+    "react-dom": "^19.0.0",
     "react-hook-form": "^7.54.1",
     "react-resizable-panels": "^2.1.7",
     "react-webcam": "^7.2.0",
