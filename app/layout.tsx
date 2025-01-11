@@ -1,32 +1,37 @@
-import "./globals.css"
-import type { Metadata } from "next"
-import { Inter } from "next/font/google"
-import type React from "react"
-import Header from "./components/Header"
-import Footer from "./components/Footer"
+import "./globals.css";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import { ThemeProvider } from "@/components/theme-provider";
+import Header from "./components/Header";
+import Footer from "./components/Footer";
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "ObjectDetect - AI-Powered Object Detection",
-  description: "Detect and analyze objects in images with our advanced AI technology.",
-}
+  title: "ObjectAI - Advanced Object Detection",
+  description:
+    "Next-generation object detection powered by artificial intelligence",
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={`${inter.className} bg-gray-900 text-gray-100`}>
-        <div className="flex flex-col min-h-screen">
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
           <Header />
-          <main className="flex-grow">{children}</main>
+          {children}
           <Footer />
-        </div>
+        </ThemeProvider>
       </body>
     </html>
-  )
+  );
 }
-

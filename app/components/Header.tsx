@@ -1,29 +1,89 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { ModeToggle } from "@/components/ui/mode-toggle";
+import { Brain, Menu } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
 
 export default function Header() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   return (
-    <header className="py-4 px-6 bg-card/50 backdrop-blur- z-[1000]">
-      <div className="container mx-auto flex justify-between items-center">
-        <Link href="/" className="text-2xl font-bold text-primary">
-          ObjectDetect
-        </Link>
-        <nav className="hidden md:flex space-x-6">
-          <Link href="/#features" className="text-gray-300 hover:text-primary transition-colors">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-16 items-center justify-between mx-auto">
+        <div className="flex items-center gap-2">
+          <Brain className="h-6 w-6 text-primary" />
+          <span className="text-xl font-bold">ObjectAI</span>
+        </div>
+
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center gap-6">
+          <Link
+            href="#features"
+            className="text-sm font-medium hover:text-primary"
+          >
             Features
           </Link>
-          <Link href="/#testimonials" className="text-gray-300 hover:text-primary transition-colors">
-            Testimonials
+          <Link href="#demo" className="text-sm font-medium hover:text-primary">
+            Demo
           </Link>
-          <Link href="/detect" className="text-gray-300 hover:text-primary transition-colors">
-            Try It
+          <Link
+            href="#pricing"
+            className="text-sm font-medium hover:text-primary"
+          >
+            Pricing
+          </Link>
+          <Link href="#docs" className="text-sm font-medium hover:text-primary">
+            Docs
           </Link>
         </nav>
-        <Button asChild variant="secondary">
-          <Link href="/detect">Detect Objects</Link>
-        </Button>
-      </div>
-    </header>
-  )
-}
 
+        <div className="flex items-center gap-4">
+          <ModeToggle />
+          <Button>Get Started</Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Mobile Navigation */}
+      {isMenuOpen && (
+        <div className="md:hidden border-t bg-background">
+          <nav className="container flex flex-col py-4">
+            <Link
+              href="#features"
+              className="py-2 text-sm font-medium hover:text-primary"
+            >
+              Features
+            </Link>
+            <Link
+              href="#demo"
+              className="py-2 text-sm font-medium hover:text-primary"
+            >
+              Demo
+            </Link>
+            <Link
+              href="#pricing"
+              className="py-2 text-sm font-medium hover:text-primary"
+            >
+              Pricing
+            </Link>
+            <Link
+              href="#docs"
+              className="py-2 text-sm font-medium hover:text-primary"
+            >
+              Docs
+            </Link>
+          </nav>
+        </div>
+      )}
+    </header>
+  );
+}
