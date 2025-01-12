@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Camera, Code2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BackgroundScene } from "./background-scene";
+import Link from "next/link";
 
 export default function Hero() {
   return (
@@ -25,14 +26,18 @@ export default function Hero() {
             speed.
           </p>
           <div className="flex gap-4">
-            <Button size="lg" className="gap-2">
-              <Camera className="w-5 h-5" />
-              Try Demo
-            </Button>
-            <Button size="lg" variant="outline" className="gap-2">
-              <Code2 className="w-5 h-5" />
-              Documentation
-            </Button>
+            <Link href="/detect">
+              <Button size="lg" className="gap-2">
+                <Camera className="w-5 h-5" />
+                Try Demo
+              </Button>
+            </Link>
+            <Link href="/docs">
+              <Button size="lg" variant="outline" className="gap-2">
+                <Code2 className="w-5 h-5" />
+                Documentation
+              </Button>
+            </Link>
           </div>
         </motion.div>
 
