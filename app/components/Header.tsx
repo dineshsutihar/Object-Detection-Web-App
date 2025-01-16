@@ -26,20 +26,26 @@ export default function Header() {
         <nav className="hidden md:flex items-center gap-6">
           <Link
             href="#features"
-            className="text-sm font-medium hover:text-primary"
+            className="text-sm font-medium hover:text-primary hover:underline"
           >
             Features
           </Link>
-          <Link href="#demo" className="text-sm font-medium hover:text-primary">
+          <Link
+            href="#demo"
+            className="text-sm font-medium hover:text-primary hover:underline"
+          >
             Demo
           </Link>
           <Link
             href="#pricing"
-            className="text-sm font-medium hover:text-primary"
+            className="text-sm font-medium hover:text-primary hover:underline"
           >
             Pricing
           </Link>
-          <Link href="#docs" className="text-sm font-medium hover:text-primary">
+          <Link
+            href="#docs"
+            className="text-sm font-medium hover:text-primary hover:underline"
+          >
             Docs
           </Link>
         </nav>
