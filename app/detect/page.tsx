@@ -13,13 +13,10 @@ export default function DetectPage() {
   const [results, setResults] = useState<any[] | null>(null);
   const [comWebcam, setComWebcam] = useState(false);
 
-  // New state for additional webcam controls
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Hardcoded sample results for demonstration
   const sampleResults = [
     { label: "Person", confidence: 0.98 },
     { label: "Chair", confidence: 0.85 },
