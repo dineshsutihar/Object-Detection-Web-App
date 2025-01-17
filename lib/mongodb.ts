@@ -8,7 +8,7 @@ const connectDb = async () => {
 
   try {
     await mongoose.connect(
-      `mongodb://admin:adminpassword@localhost:27017/?authSource=admin`
+      `mongodb://localhost:27017/objectAI`,
     );
     console.log('MongoDB connected');
   } catch (error) {

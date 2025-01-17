@@ -1,41 +1,58 @@
 "use client";
 
+import validateEmailAndPassword from "@/utils/email_pass";
+import { useRouter } from "next/navigation";
+
 export default function LoginPage() {
+  const router = useRouter();
   return (
     <section className="flex flex-col items-center justify-center min-h-screen">
       <h1 className="text-3xl font-bold mb-4">Login</h1>
       <form
         className="flex flex-col space-y-4 w-1/4"
-        action="/api/auth/login"
-        method="POST"
         noValidate
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
           const formData = new FormData(e.currentTarget);
           const email = formData.get("email") as string;
           const password = formData.get("password") as string;
+          const { isValid, emailError, passwordError } =
+            validateEmailAndPassword(email, password);
 
-          let isValid = true;
+          const emailErrorElement = document.getElementById("email-error");
+          const passwordErrorElement =
+            document.getElementById("password-error");
 
-          // Email validation
-          if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            document.getElementById("email-error")!.textContent =
-              "Please enter a valid email";
-            isValid = false;
-          } else {
-            document.getElementById("email-error")!.textContent = "";
+          if (!isValid) {
+            if (emailErrorElement)
+              emailErrorElement.textContent = emailError || "";
+            if (passwordErrorElement)
+              passwordErrorElement.textContent = passwordError || "";
+            return;
           }
 
-          if (!password || password.length < 8) {
-            document.getElementById("password-error")!.textContent =
-              "Password must be at least 8 characters";
-            isValid = false;
-          } else {
-            document.getElementById("password-error")!.textContent = "";
-          }
+          if (emailErrorElement) emailErrorElement.textContent = "";
+          if (passwordErrorElement) passwordErrorElement.textContent = "";
 
-          if (isValid) {
-            e.currentTarget.submit();
+          try {
+            const res = await fetch("/api/auth/login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, password }),
+            });
+
+            if (res.ok) {
+              const data = await res.json();
+              alert("Login successful!");
+              localStorage.setItem("token", data.token);
+              localStorage.setItem("user", JSON.stringify(data.user));
+              router.push("/detect");
+            } else {
+              const data = await res.json();
+              alert(`Login failed: ${data.message}`);
+            }
+          } catch (error) {
+            console.error("Login failed:", error);
           }
         }}
       >
