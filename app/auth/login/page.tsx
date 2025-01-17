@@ -44,8 +44,6 @@ export default function LoginPage() {
             if (res.ok) {
               const data = await res.json();
               alert("Login successful!");
-              localStorage.setItem("token", data.token);
-              localStorage.setItem("user", JSON.stringify(data.user));
               router.push("/detect");
             } else {
               const data = await res.json();

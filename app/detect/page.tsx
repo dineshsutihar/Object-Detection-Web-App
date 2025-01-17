@@ -1,10 +1,11 @@
 "use client";
 
-import { ChangeEvent, useState, useRef } from "react";
+import { ChangeEvent, useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import Webcam from "react-webcam";
+import { useRouter } from "next/navigation";
 
 export default function DetectPage() {
   const [image, setImage] = useState<string | null>(null);
@@ -23,6 +24,20 @@ export default function DetectPage() {
     { label: "Laptop", confidence: 0.92 },
     { label: "Coffee Cup", confidence: 0.78 },
   ];
+
+  const router = useRouter();
+  useEffect(() => {
+    const checkAuth = async () => {
+      const res = await fetch("/api/auth/check");
+      const data = await res.json();
+      console.log("Auth check response:", data);
+      if (!data.authenticated) {
+        router.push("/auth/login");
+      }
+    };
+
+    checkAuth();
+  }, []);
 
   // Use detected results if available; otherwise use sample results.
   const displayResults = results || sampleResults;

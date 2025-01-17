@@ -24,9 +24,11 @@ export const POST = async (req: Request) => {
       return NextResponse.json({ message: 'Invalid credentials' }, { status: 400 });
     }
 
-    const token = jwt.sign({ id: user._id, email: user.email }, 'your_secret_key', { expiresIn: '1h' });
-
-    return NextResponse.json({ message: 'Login successful', token });
+    if (!process.env.JWT_SECRET) throw new Error('Missing JWT secret environment variable');
+    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const response = NextResponse.json({ message: 'Login successful', token });
+    response.cookies.set('token', token);
+    return response;
   } catch (error) {
     console.error('Error during login:', error);
     return NextResponse.json({ message: 'Server error' }, { status: 500 });
