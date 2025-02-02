@@ -3,7 +3,7 @@ import Link from "next/link"
 
 export default function CTA() {
   return (
-    <section className="py-20 bg-gradient-to-r from-primary/20 to-secondary/20">
+    <section className="py-20 bg-gradient-to-r from-primary/20 to-secondary/20 lg:h-[70vh] flex items-center justify-center">
       <div className="container mx-auto text-center">
         <h2 className="text-3xl font-bold mb-6 text-primary">Ready to Detect Objects in Your Images?</h2>
         <p className="text-xl mb-8 max-w-2xl mx-auto text-gray-300">

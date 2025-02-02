@@ -25,7 +25,7 @@ const features = [
 
 export default function Features() {
   return (
-    <section id="features" className="py-20 bg-card/50">
+    <section id="features" className="py-20 bg-card/50 lg:h-[70vh] flex items-center justify-center">
       <div className="container mx-auto">
         <h2 className="text-3xl font-bold text-center mb-12 text-primary">Why Choose ObjectDetect?</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
