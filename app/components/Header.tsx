@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 
 export default function Header() {
   return (
-    <header className="py-4 px-6 bg-card/50 backdrop-blur-sm">
+    <header className="py-4 px-6 bg-card/50 backdrop-blur- z-[1000]">
       <div className="container mx-auto flex justify-between items-center">
         <Link href="/" className="text-2xl font-bold text-primary">
           ObjectDetect
