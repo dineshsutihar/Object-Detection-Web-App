@@ -15,6 +15,12 @@ export default function DetectPage() {
   const [results, setResults] = useState<any[] | null>(null);
   const [comWebcam, setComWebcam] = useState(false);
 
+  const sampleResults = [
+    { label: "Person", confidence: 0.98 },
+    { label: "Chair", confidence: 0.85 },
+    { label: "Laptop", confidence: 0.92 },
+    { label: "Coffee Cup", confidence: 0.78 },
+  ];
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
