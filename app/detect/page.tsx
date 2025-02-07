@@ -16,6 +16,24 @@ export default function DetectPage() {
   const [comWebcam, setComWebcam] = useState(false);
 
 
+  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+    event.preventDefault();
+    if (!file) return;
+    setLoading(true);
+    // object detection logic here
+    setResults(sampleResults);
+    setLoading(false);
+  }
+
+  function handleImageUpload(event: ChangeEvent<HTMLInputElement>): void {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setFile(file);
+    const imageUrl = URL.createObjectURL(file);
+    setImage(imageUrl);
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 my-20">
       <div className="flex flex-col md:flex-row gap-8">
