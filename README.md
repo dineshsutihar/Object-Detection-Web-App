@@ -67,3 +67,7 @@ To learn more about Next.js, take a look at the following resources:
 ## License
 
 This project is licensed under the MIT License.
+
+
+# UI Library that we can use are: 
+1. https://magicui.design/docs/components/number-ticker
