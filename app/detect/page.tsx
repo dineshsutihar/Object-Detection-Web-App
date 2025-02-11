@@ -13,6 +13,10 @@ export default function DetectPage() {
   const [results, setResults] = useState<any[] | null>(null);
   const [comWebcam, setComWebcam] = useState(false);
 
+  // New state for additional webcam controls
+  const [isCameraOn, setIsCameraOn] = useState(true);
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Hardcoded sample results for demonstration
@@ -56,6 +60,19 @@ export default function DetectPage() {
     setImage(null);
   }
 
+  // Functions for webcam controls.
+  function handleStopCamera() {
+    setIsCameraOn(false);
+  }
+
+  function handleStartCamera() {
+    setIsCameraOn(true);
+  }
+
+  function handleSwitchCamera() {
+    setFacingMode((prevMode) => (prevMode === "user" ? "environment" : "user"));
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 my-20">
       {/* Center the two sections with horizontal gap */}
@@ -77,14 +94,22 @@ export default function DetectPage() {
             onClick={!comWebcam ? handleClickDropZone : undefined}
           >
             {comWebcam ? (
-              <Webcam
-                audio={false}
-                screenshotFormat="image/jpeg"
-                className="w-full h-full object-cover"
-                onUserMediaError={(error) =>
-                  console.error("Webcam error:", error)
-                }
-              />
+              isCameraOn ? (
+                <Webcam
+                  key={facingMode} // force remount when facingMode changes
+                  audio={false}
+                  screenshotFormat="image/jpeg"
+                  className="w-full h-full object-cover"
+                  videoConstraints={{ facingMode }}
+                  onUserMediaError={(error) =>
+                    console.error("Webcam error:", error)
+                  }
+                />
+              ) : (
+                <div className="w-full h-full bg-black flex items-center justify-center">
+                  <span className="text-white">Camera is off</span>
+                </div>
+              )
             ) : image ? (
               <>
                 <Image
@@ -118,12 +143,26 @@ export default function DetectPage() {
             className="hidden"
           />
 
-          {/* Mode switch button below the preview */}
-          <div className="mt-4">
+          {/* Mode switch and webcam control buttons below the preview */}
+          <div className="mt-4 flex gap-2 items-center">
             {comWebcam ? (
-              <Button variant="outline" onClick={() => setComWebcam(false)}>
-                Switch to Image Mode
-              </Button>
+              <>
+                <Button variant="outline" onClick={() => setComWebcam(false)}>
+                  Switch to Image Mode
+                </Button>
+                {isCameraOn ? (
+                  <Button variant="outline" onClick={handleStopCamera}>
+                    Stop Camera
+                  </Button>
+                ) : (
+                  <Button variant="outline" onClick={handleStartCamera}>
+                    Start Camera
+                  </Button>
+                )}
+                <Button variant="outline" onClick={handleSwitchCamera}>
+                  Switch Camera Source
+                </Button>
+              </>
             ) : (
               <Button variant="outline" onClick={() => setComWebcam(true)}>
                 Switch to Webcam Mode
@@ -137,7 +176,6 @@ export default function DetectPage() {
           <h2 className="text-2xl font-semibold mb-6 text-secondary">
             Detection Results
           </h2>
-
           {/* Stats Summary */}
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="bg-gray-700 p-4 rounded-lg">
@@ -151,7 +189,6 @@ export default function DetectPage() {
               <p className="text-2xl font-bold text-primary">0.8s</p>
             </div>
           </div>
-
           {/* Results List */}
           <div className="space-y-4">
             {displayResults.map((result, index) => (
@@ -166,7 +203,6 @@ export default function DetectPage() {
               </div>
             ))}
           </div>
-
           {/* Detect Control */}
           <div className="flex flex-col gap-4 mt-6">
             <Button
