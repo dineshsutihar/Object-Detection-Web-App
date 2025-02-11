@@ -50,11 +50,17 @@ export default function DetectPage() {
     fileInputRef.current?.click();
   }
 
+  // Clear the uploaded image and reset file.
+  function handleClearImage() {
+    setFile(null);
+    setImage(null);
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 my-20">
       <div className="flex flex-col md:flex-row gap-8">
         {/* Left Side - Image/Video Content */}
-        <div className="md:w-2/3">
+        <div className="md:w-2/3 relative">
           {comWebcam ? (
             <div className="relative w-full h-[500px] border border-primary/50 rounded-lg overflow-hidden">
               <Webcam
@@ -78,16 +84,28 @@ export default function DetectPage() {
                   setImage(URL.createObjectURL(uploadedFile));
                 }
               }}
+              onClick={handleClickDropZone}
             >
               {image ? (
-                <Image
-                  src={image}
-                  alt="Uploaded image"
-                  fill
-                  style={{ objectFit: "contain" }}
-                />
+                <>
+                  <Image
+                    src={image}
+                    alt="Uploaded image"
+                    fill
+                    style={{ objectFit: "contain" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleClearImage();
+                    }}
+                    className="absolute top-2 right-2 bg-gray-800 text-white rounded-full p-1 hover:bg-gray-700"
+                  >
+                    ✕
+                  </button>
+                </>
               ) : (
-                // A button is placed here to ensure the click event fires reliably.
                 <button
                   type="button"
                   onClick={handleClickDropZone}
