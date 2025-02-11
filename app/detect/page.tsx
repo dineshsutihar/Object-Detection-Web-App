@@ -1,8 +1,7 @@
 "use client";
 
-import { ChangeEvent, useState, FormEvent } from "react";
+import { ChangeEvent, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import Webcam from "react-webcam";
@@ -13,6 +12,8 @@ export default function DetectPage() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any[] | null>(null);
   const [comWebcam, setComWebcam] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Hardcoded sample results for demonstration
   const sampleResults = [
@@ -45,21 +46,17 @@ export default function DetectPage() {
     setImage(imageUrl);
   }
 
+  function handleClickDropZone() {
+    fileInputRef.current?.click();
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 my-20">
       <div className="flex flex-col md:flex-row gap-8">
         {/* Left Side - Image/Video Content */}
         <div className="md:w-2/3">
-          <div className="mb-4">
-            <Input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="flex-grow bg-card text-gray-300"
-            />
-          </div>
-          <div className="relative w-full h-[500px] border border-primary/50 rounded-lg overflow-hidden">
-            {comWebcam ? (
+          {comWebcam ? (
+            <div className="relative w-full h-[500px] border border-primary/50 rounded-lg overflow-hidden">
               <Webcam
                 audio={false}
                 screenshotFormat="image/jpeg"
@@ -68,15 +65,47 @@ export default function DetectPage() {
                   console.error("Webcam error:", error)
                 }
               />
-            ) : (
-              <Image
-                src={image || "/placeholder.svg"}
-                alt="Uploaded image"
-                fill
-                style={{ objectFit: "contain" }}
-              />
-            )}
-          </div>
+            </div>
+          ) : (
+            <div
+              className="relative w-full h-[500px] border-2 border-dashed border-primary/50 rounded-lg overflow-hidden flex items-center justify-center cursor-pointer"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                  const uploadedFile = e.dataTransfer.files[0];
+                  setFile(uploadedFile);
+                  setImage(URL.createObjectURL(uploadedFile));
+                }
+              }}
+            >
+              {image ? (
+                <Image
+                  src={image}
+                  alt="Uploaded image"
+                  fill
+                  style={{ objectFit: "contain" }}
+                />
+              ) : (
+                // A button is placed here to ensure the click event fires reliably.
+                <button
+                  type="button"
+                  onClick={handleClickDropZone}
+                  className="text-gray-400 bg-transparent border-none text-lg underline"
+                >
+                  Drag and drop or click here to upload image
+                </button>
+              )}
+            </div>
+          )}
+          <input
+            ref={fileInputRef}
+            id="hiddenFileInput"
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="hidden"
+          />
         </div>
 
         {/* Right Side - Details and Controls */}
@@ -117,13 +146,6 @@ export default function DetectPage() {
           {/* Controls: Detect and Toggle Webcam */}
           <div className="flex flex-col gap-4 mt-6">
             <Button
-              className="w-full"
-              variant="outline"
-              onClick={() => setComWebcam(!comWebcam)}
-            >
-              {comWebcam ? "Switch to Upload" : "Switch to Webcam"}
-            </Button>
-            <Button
               onClick={handleDetect}
               disabled={!file || loading}
               variant="secondary"
@@ -133,6 +155,13 @@ export default function DetectPage() {
               ) : (
                 "Detect"
               )}
+            </Button>
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={() => setComWebcam(!comWebcam)}
+            >
+              {comWebcam ? "Switch to Upload" : "Switch to Webcam"}
             </Button>
           </div>
         </div>
