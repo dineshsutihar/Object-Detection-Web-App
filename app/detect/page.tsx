@@ -144,7 +144,7 @@ export default function DetectPage() {
           />
 
           {/* Mode switch and webcam control buttons below the preview */}
-          <div className="mt-4 flex gap-2 items-center">
+          <div className="mt-4 flex gap-2 items-center flex-wrap">
             {comWebcam ? (
               <>
                 <Button variant="outline" onClick={() => setComWebcam(false)}>
