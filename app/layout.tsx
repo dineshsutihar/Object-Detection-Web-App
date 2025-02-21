@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import { Toaster as ShadcnToaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,6 +30,7 @@ export default function RootLayout({
         >
           <Header />
           {children}
+          <ShadcnToaster />
           <Footer />
         </ThemeProvider>
       </body>
