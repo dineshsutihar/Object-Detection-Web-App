@@ -1,40 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-interface PythonTrainSuccessResponse {
-  success: true;
-  message: string;
-  saved_count: number;
-  saved_filenames: string[];
-  errors: Array<{ filename: string; error: string }>;
-}
-
-interface ErrorResponse {
-  success: false;
-  error: string;
-  detail?: any;
-}
-
+interface ErrorResponse { success: false; error: string; detail?: any; }
 const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000';
 
 export async function POST(request: NextRequest) {
-  console.log('API Route /api/train hit');
   let pythonResponse;
-
   try {
     const formData = await request.formData();
-    const files = formData.getAll('images') as File[]; // Key 'images' must match frontend
-
+    const files = formData.getAll('images') as File[];
+    const label = formData.get('label') as string | null;
     if (!files || files.length === 0) {
-      console.error('No image files found in form data for training.');
-      return NextResponse.json<ErrorResponse>(
-        { success: false, error: 'No image files provided for training.' },
-        { status: 400 }
-      );
+      return NextResponse.json<ErrorResponse>({ success: false, error: 'No image files provided.' }, { status: 400 });
+    }
+    if (!label || label.trim() === '') {
+      return NextResponse.json<ErrorResponse>({ success: false, error: 'Object label is required.' }, { status: 400 });
     }
 
-    console.log(`Forwarding ${files.length} file(s) for training to Python backend at ${PYTHON_BACKEND_URL}/upload-train`);
+    console.log(`Forwarding ${files.length} file(s) with label '${label}' for training to Python`);
 
     const pythonFormData = new FormData();
+    pythonFormData.append('label', label);
     files.forEach((file) => {
       pythonFormData.append('files', file, file.name);
     });
@@ -44,47 +29,27 @@ export async function POST(request: NextRequest) {
       body: pythonFormData,
     });
 
-    console.log(`Python backend response status (training upload): ${pythonResponse.status}`);
-
     if (!pythonResponse.ok) {
-      let errorDetail = 'Unknown error from training upload service.';
-      try {
-        const errorJson = await pythonResponse.json();
-        errorDetail = errorJson.detail || JSON.stringify(errorJson) || pythonResponse.statusText;
-        console.error(`Python backend error (training upload): ${errorDetail}`);
-      } catch (parseError) {
-        errorDetail = pythonResponse.statusText;
-        console.error(`Python backend error (training upload, non-JSON): ${errorDetail}`);
-      }
+      let errorDetail = 'Training upload service failed.';
+      try { const errorJson = await pythonResponse.json(); errorDetail = errorJson.detail || JSON.stringify(errorJson); } catch (e) { errorDetail = pythonResponse.statusText; }
+      console.error(`Python train upload error: ${errorDetail}`);
       return NextResponse.json<ErrorResponse>(
-        { success: false, error: 'Training image upload service failed.', detail: errorDetail },
+        { success: false, error: 'Training upload failed.', detail: errorDetail },
         { status: pythonResponse.status }
       );
     }
 
-    const result: PythonTrainSuccessResponse = await pythonResponse.json();
-    console.log(`Received response from Python backend: ${result.message}`);
-
-    return NextResponse.json(result, { status: pythonResponse.status }); // Can be 200 or potentially 207 (Multi-Status) if partial failures
+    const result = await pythonResponse.json();
+    return NextResponse.json(result, { status: pythonResponse.status });
 
   } catch (error: any) {
-    console.error('Error in /api/train proxy route:', error);
-
-    if (error.cause && error.cause.code === 'ECONNREFUSED') {
-      console.error('Connection refused by Python backend.');
-      return NextResponse.json<ErrorResponse>(
-        { success: false, error: 'Training upload service is unavailable.' },
-        { status: 503 } // Service Unavailable
-      );
+    console.error('Error in /api/train proxy:', error);
+    if (error.cause?.code === 'ECONNREFUSED') {
+      return NextResponse.json<ErrorResponse>({ success: false, error: 'Training upload service unavailable.' }, { status: 503 });
     }
-
     return NextResponse.json<ErrorResponse>(
       { success: false, error: 'Internal Server Error processing training upload.', detail: error.message },
       { status: 500 }
     );
   }
-}
-
-export async function GET() {
-  return NextResponse.json({ message: "Use POST to upload training images" }, { status: 405 });
 }
