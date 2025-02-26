@@ -1,7 +1,5 @@
-# python-backend/requirements.txt
 fastapi
 uvicorn[standard]
 python-multipart
 ultralytics
 Pillow
-python-dotenv
