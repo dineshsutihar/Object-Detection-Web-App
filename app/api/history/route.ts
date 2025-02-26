@@ -1,42 +1,43 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { Types } from 'mongoose';
+import connectDb from '@/lib/mongodb';
+import HistoryLog from '@/models/HistoryLog';
+import { authMiddleware } from '@/lib/authMiddleware';
 
-interface ErrorResponse { success: false; error: string; detail?: any; }
-const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000';
+export const GET = (req: Request) => authMiddleware(req as any, handler);
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const limit = searchParams.get('limit') || '50';
-  const skip = searchParams.get('skip') || '0';
+async function handler(req: any): Promise<NextResponse> {
+  const userId = req.userId as Types.ObjectId;
 
-  console.log(`Fetching history: limit=${limit}, skip=${skip}`);
-  let pythonResponse;
+  await connectDb();
 
   try {
-    pythonResponse = await fetch(`${PYTHON_BACKEND_URL}/history?limit=${limit}&skip=${skip}`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
+    const { searchParams } = new URL(req.url);
+    const limit = parseInt(searchParams.get('limit') || '10', 10);
+    const skip = parseInt(searchParams.get('skip') || '0', 10);
 
-    if (!pythonResponse.ok) {
-      let errorDetail = 'History service failed.';
-      try { const errorJson = await pythonResponse.json(); errorDetail = errorJson.detail || JSON.stringify(errorJson); } catch (e) { errorDetail = pythonResponse.statusText; }
-      console.error(`Python history fetch error: ${errorDetail}`);
-      return NextResponse.json<ErrorResponse>(
-        { success: false, error: 'Failed to fetch history.', detail: errorDetail },
-        { status: pythonResponse.status }
-      );
+    if (isNaN(limit) || isNaN(skip) || limit <= 0 || skip < 0) {
+      return NextResponse.json({ success: false, error: 'Invalid pagination parameters.' }, { status: 400 });
     }
 
-    const result = await pythonResponse.json();
-    return NextResponse.json(result, { status: 200 });
+    console.log(`[User: ${userId}] Fetching history: limit=${limit}, skip=${skip}`);
+
+    const logs = await HistoryLog.find({ userId: userId })
+      .sort({ timestamp: -1 })
+      .skip(skip)
+      .limit(limit)
+      // Select fields - exclude large imageData by default unless requested?
+      // .select('-imageData') // Example: Exclude image data for listing
+      .lean();
+
+    const totalCount = await HistoryLog.countDocuments({ userId: userId });
+
+    return NextResponse.json({ success: true, logs: logs, totalCount });
 
   } catch (error: any) {
-    console.error('Error in /api/history proxy:', error);
-    if (error.cause?.code === 'ECONNREFUSED') {
-      return NextResponse.json<ErrorResponse>({ success: false, error: 'History service unavailable.' }, { status: 503 });
-    }
-    return NextResponse.json<ErrorResponse>(
-      { success: false, error: 'Internal Server Error fetching history.', detail: error.message },
+    console.error(`[User: ${userId}] Error fetching history:`, error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to fetch history logs.', detail: error.message },
       { status: 500 }
     );
   }
