@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { Toaster as ShadcnToaster } from "@/components/ui/toaster";
+import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,6 +30,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Header />
+          <Toaster richColors position="top-right" />
           {children}
           <ShadcnToaster />
           <Footer />

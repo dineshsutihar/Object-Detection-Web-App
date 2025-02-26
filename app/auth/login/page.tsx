@@ -2,6 +2,7 @@
 
 import validateEmailAndPassword from "@/utils/email_pass";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -43,14 +44,17 @@ export default function LoginPage() {
 
             if (res.ok) {
               const data = await res.json();
-              alert("Login successful!");
+              toast.success("Login successful!");
               router.push("/detect");
             } else {
               const data = await res.json();
-              alert(`Login failed: ${data.message}`);
+              toast.info(
+                `Login failed. ${data.message}` ||
+                  "Login failed. Please try again."
+              );
             }
           } catch (error) {
-            console.error("Login failed:", error);
+            toast.error("Login failed. " + error);
           }
         }}
       >

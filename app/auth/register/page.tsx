@@ -3,6 +3,7 @@
 import validateEmailAndPassword from "@/utils/email_pass";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export default function RegisterPage() {
   const [errors, setErrors] = useState({
@@ -49,15 +50,16 @@ export default function RegisterPage() {
       });
 
       if (response.ok) {
-        alert("Registration successful!");
+        toast.success("Registration successful!");
+        toast.info("Redirecting to login page...");
         router.push("/auth/login");
       } else {
         const data = await response.json();
-        alert(`Registration failed: ${data.message}`);
+        toast.error("Registration failed: " + data.message);
       }
     } catch (error) {
+      toast.error("Registration failed. " + error);
       console.error("Registration error:", error);
-      alert("Registration failed. Please try again.");
     }
   };
 
