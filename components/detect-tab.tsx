@@ -14,6 +14,7 @@ import {
 import { toast as sonnerToast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import Cookies from "js-cookie";
 
 interface Detection {
   bbox_normalized: [number, number, number, number];
@@ -164,6 +165,10 @@ export function DetectTab() {
     [detectPreviewUrl, isLiveMode]
   );
 
+  const getAuthToken = () => {
+    return Cookies.get("token") || null;
+  };
+
   const handleDetectSubmit = async () => {
     if (isLiveMode) return;
     if (!detectFile) {
@@ -175,11 +180,15 @@ export function DetectTab() {
     setDetectionResults(null);
     const formData = new FormData();
     formData.append("image", detectFile);
+    const token = getAuthToken();
 
     try {
       const response = await fetch("/api/detect", {
         method: "POST",
         body: formData,
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
       });
       const result: DetectApiResponse = await response.json();
       if (response.ok && result.success) {
