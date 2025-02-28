@@ -1,29 +1,29 @@
 "use client";
-import Head from "next/head";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Toaster } from "@/components/ui/sonner"; // Sonner toaster
 
 import { DetectTab } from "@/components/detect-tab";
 import { TrainTab } from "@/components/train-tab";
 import { HistoryTab } from "@/components/history-tab";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function DetectPageContainer() {
+  const router = useRouter();
+  useEffect(() => {
+    const checkAuth = async () => {
+      const res = await fetch("/api/auth/check");
+      const data = await res.json();
+      console.log("Auth check response:", data);
+      if (!data.authenticated) {
+        router.push("/auth/login");
+      }
+    };
+
+    checkAuth();
+  }, []);
   return (
     <>
-      <Head>
-        <title>YOLO Object Detection & Training</title>
-        <meta
-          name="description"
-          content="Detect objects, upload training data, and view history."
-        />
-      </Head>
-      <Toaster richColors position="top-right" />{" "}
-      {/* Position Sonner Toaster */}
       <div className="container mx-auto p-4 md:p-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-center mb-8">
-          YOLO Application
-        </h1>
-
         <Tabs defaultValue="detect" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="detect">Detect</TabsTrigger>
