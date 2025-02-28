@@ -1,103 +1,119 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { Types } from 'mongoose';
+import connectDb from '@/lib/mongodb';
+import HistoryLog from '@/models/HistoryLog';
+import { authMiddleware } from '@/lib/authMiddleware';
 import { ZodError } from 'zod';
 
-interface Detection {
-  bbox_normalized: [number, number, number, number];
-  class_id: number;
-  class_name: string;
-  confidence: number;
-}
-
-interface PythonDetectSuccessResponse {
-  success: true;
-  filename: string;
-  detections: Detection[];
-}
-
-interface ErrorResponse {
-  success: false;
-  error: string;
+interface NextDetectApiResponse {
+  success: boolean;
+  logId?: string;
+  detections?: any[];
+  error?: string;
   detail?: any;
 }
 
+interface PythonDetectResponse {
+  detections: any[];
+}
 
 const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000';
 
-export async function POST(request: NextRequest) {
-  console.log('API Route /api/detect hit');
-  let pythonResponse; // To store the response from Python
+export const POST = (req: Request) => authMiddleware(req as any, handler);
+
+async function handler(req: any): Promise<NextResponse> {
+  const userId = req.userId as Types.ObjectId;
+  let logEntry;
+
+  await connectDb();
 
   try {
-    const formData = await request.formData();
+    const formData = await req.formData();
     const file = formData.get('image') as File | null;
 
     if (!file) {
-      console.error('No image file found in form data');
-      return NextResponse.json<ErrorResponse>(
-        { success: false, error: 'No image file provided.' },
-        { status: 400 }
+      return NextResponse.json<NextDetectApiResponse>(
+        { success: false, error: 'No image file provided.' }, { status: 400 }
       );
     }
 
-    console.log(`Forwarding file '${file.name}' (${Math.round(file.size / 1024)} KB) to Python backend at ${PYTHON_BACKEND_URL}/detect`);
+    const arrayBuffer = await file.arrayBuffer();
+    const imageBuffer = Buffer.from(arrayBuffer);
+    const imageBase64 = imageBuffer.toString('base64');
+    const mimeType = file.type || 'image/jpeg';
+    const imageDataUri = `data:${mimeType};base64,${imageBase64}`;
+
+
+    logEntry = new HistoryLog({
+      userId: userId,
+      type: 'detection',
+      status: 'pending',
+      detectionSource: 'upload',
+      originalFilename: file.name,
+      imageData: imageDataUri,
+    });
+    await logEntry.save();
+    console.log(`[User: ${userId}] Created pending detection log: ${logEntry._id}`);
 
     const pythonFormData = new FormData();
-    pythonFormData.append('file', file, file.name);
+    const blob = new Blob([imageBuffer], { type: file.type });
+    pythonFormData.append('file', blob, file.name);
 
-    pythonResponse = await fetch(`${PYTHON_BACKEND_URL}/detect`, {
+    logEntry.status = 'processing';
+    await logEntry.save();
+
+    console.log(`[Log: ${logEntry._id}] Forwarding '${file.name}' to Python backend...`);
+    const pythonResponse = await fetch(`${PYTHON_BACKEND_URL}/detect`, {
       method: 'POST',
       body: pythonFormData,
     });
 
-    console.log(`Python backend response status: ${pythonResponse.status}`);
-
     if (!pythonResponse.ok) {
-      let errorDetail = 'Unknown error from detection service.';
+      let errorDetail = 'Python detection service failed.';
       try {
         const errorJson = await pythonResponse.json();
-        errorDetail = errorJson.detail || JSON.stringify(errorJson) || pythonResponse.statusText;
-        console.error(`Python backend error: ${errorDetail}`);
-      } catch (parseError) {
-        // If parsing fails, use the status text
-        errorDetail = pythonResponse.statusText;
-        console.error(`Python backend error (non-JSON): ${errorDetail}`);
-      }
-      return NextResponse.json<ErrorResponse>(
-        { success: false, error: 'Detection service failed.', detail: errorDetail },
-        { status: pythonResponse.status } // Proxy the status code
+        errorDetail = errorJson.detail || JSON.stringify(errorJson);
+      } catch (e) { errorDetail = pythonResponse.statusText; }
+
+      console.error(`[Log: ${logEntry._id}] Python backend error: ${errorDetail}`);
+      logEntry.status = 'failure';
+      logEntry.errorMessage = errorDetail;
+      await logEntry.save();
+      return NextResponse.json<NextDetectApiResponse>(
+        { success: false, logId: logEntry._id.toString(), error: 'Detection processing failed.', detail: errorDetail },
+        { status: 502 }
       );
     }
 
-    const result: PythonDetectSuccessResponse = await pythonResponse.json();
-    console.log(`Received ${result.detections.length} detections from Python backend.`);
+    const result: PythonDetectResponse = await pythonResponse.json();
 
-    return NextResponse.json(result, { status: 200 });
+    logEntry.status = 'success';
+    logEntry.detectionResults = result.detections;
+    await logEntry.save();
+    console.log(`[Log: ${logEntry._id}] Detection successful. Found ${result.detections?.length ?? 0} objects.`);
+
+    return NextResponse.json<NextDetectApiResponse>(
+      { success: true, logId: logEntry._id.toString(), detections: result.detections },
+      { status: 200 }
+    );
 
   } catch (error: any) {
-    console.error('Error in /api/detect proxy route:', error);
-
-    if (error instanceof ZodError) {
-      return NextResponse.json<ErrorResponse>(
-        { success: false, error: 'Invalid request data.', detail: error.errors },
-        { status: 400 }
-      );
+    console.error(`[User: ${userId}] Error in /api/detect:`, error);
+    if (logEntry && logEntry._id) {
+      try {
+        logEntry.status = 'failure';
+        logEntry.errorMessage = error.message || 'Next.js API route error';
+        await logEntry.save();
+      } catch (logError) {
+        console.error(`[Log: ${logEntry._id}] Failed to update log status on error:`, logError);
+      }
     }
-
-    if (error.cause && error.cause.code === 'ECONNREFUSED') {
-      console.error('Connection refused by Python backend.');
-      return NextResponse.json<ErrorResponse>(
-        { success: false, error: 'Detection service is unavailable.' },
-        { status: 503 } // Service Unavailable
-      );
+    if (error.cause?.code === 'ECONNREFUSED') {
+      return NextResponse.json<NextDetectApiResponse>({ success: false, logId: logEntry?._id.toString(), error: 'Detection service unavailable.' }, { status: 503 });
     }
-
-    return NextResponse.json<ErrorResponse>(
-      { success: false, error: 'Internal Server Error processing detection request.', detail: error.message },
+    return NextResponse.json<NextDetectApiResponse>(
+      { success: false, logId: logEntry?._id.toString(), error: 'Internal Server Error.', detail: error.message },
       { status: 500 }
     );
   }
-}
-
-export async function GET() {
-  return NextResponse.json({ message: "Use POST to detect objects" }, { status: 405 });
 }
