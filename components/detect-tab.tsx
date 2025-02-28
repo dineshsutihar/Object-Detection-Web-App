@@ -11,10 +11,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { toast as sonnerToast } from "sonner";
+import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import Cookies from "js-cookie";
+import { Image as NewImg } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "./ui/table";
 
 interface Detection {
   bbox_normalized: [number, number, number, number];
@@ -44,6 +54,8 @@ export function DetectTab() {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const router = useRouter();
 
   useEffect(() => {
     return () => {
@@ -113,7 +125,7 @@ export function DetectTab() {
         const text = `${det.class_name} (${(det.confidence * 100).toFixed(
           0
         )}%)`;
-        ctx.font = "14px Arial";
+        ctx.font = "18px Arial";
         const textWidth = ctx.measureText(text).width;
         ctx.fillRect(x, y - 18 > 0 ? y - 18 : y, textWidth + 8, 18);
 
@@ -157,22 +169,27 @@ export function DetectTab() {
         setDetectionResults(null);
         if (detectPreviewUrl) URL.revokeObjectURL(detectPreviewUrl);
         setDetectPreviewUrl(URL.createObjectURL(file));
-        sonnerToast.info(`Selected file: ${file.name}`);
+        toast.info(`Selected file: ${file.name}`);
       } else {
-        sonnerToast.error("Invalid file type.");
+        toast.error("Invalid file type.");
       }
     },
     [detectPreviewUrl, isLiveMode]
   );
 
   const getAuthToken = () => {
-    return Cookies.get("token") || null;
+    const token = Cookies.get("token") || null;
+    if (token === null) {
+      router.push("/auth/login");
+      return;
+    }
+    return token;
   };
 
   const handleDetectSubmit = async () => {
     if (isLiveMode) return;
     if (!detectFile) {
-      sonnerToast.error("Please select an image file first.");
+      toast.error("Please select an image file first.");
       return;
     }
 
@@ -193,19 +210,17 @@ export function DetectTab() {
       const result: DetectApiResponse = await response.json();
       if (response.ok && result.success) {
         setDetectionResults(result.detections || []);
-        sonnerToast.success(
+        toast.success(
           `Detection complete. Found ${result.detections?.length ?? 0} objects.`
         );
       } else {
         console.error("Detection API Error:", result);
-        sonnerToast.error(
-          `Detection failed: ${result.error || response.statusText}`
-        );
+        toast.error(`Detection failed: ${result.error || response.statusText}`);
         setDetectionResults(null);
       }
     } catch (error: any) {
       console.error("Fetch error during detection:", error);
-      sonnerToast.error(`Network or server error: ${error.message}`);
+      toast.error(`Network or server error: ${error.message}`);
       setDetectionResults(null);
     } finally {
       setDetectLoading(false);
@@ -240,7 +255,7 @@ export function DetectTab() {
           drawBoxes(result.detections || [], webcamRef.current.video);
         }
       } else {
-        sonnerToast.error(
+        toast.error(
           `Frame detection failed: ${result.error || response.statusText}`
         );
         console.warn(
@@ -249,7 +264,7 @@ export function DetectTab() {
       }
     } catch (error: any) {
       console.error("Fetch error during frame detection:", error);
-      sonnerToast.error(`Network or server error: ${error.message}`);
+      toast.error(`Network or server error: ${error.message}`);
     } finally {
       setDetectLoading(false);
     }
@@ -343,45 +358,77 @@ export function DetectTab() {
               } ${isLiveMode ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <input {...getDetectInputProps()} disabled={isLiveMode} />
-              <p>Drag 'n' drop image, or click to select</p>
-            </div>
-            {detectFile && (
-              <div className="mt-4 text-sm">
-                Selected: <span className="font-medium">{detectFile.name}</span>
-              </div>
-            )}
-            {detectPreviewUrl && (
-              <div className="mt-4 border rounded-md overflow-hidden relative">
-                <img
-                  src={detectPreviewUrl}
-                  alt="Preview"
-                  className="max-w-full h-auto block"
-                />
-
-                <canvas
-                  ref={canvasRef}
-                  className="absolute top-0 left-0 w-full h-full pointer-events-none"
-                />
-              </div>
-            )}
-
-            {detectionResults && detectionResults.length > 0 && (
-              <div className="mt-4">
-                <h4 className="font-semibold mb-2">Detection Results:</h4>
-                <ul className="list-disc list-inside text-sm space-y-1">
-                  {detectionResults.map((det, index) => (
-                    <li key={index}>
-                      {det.class_name} ({(det.confidence * 100).toFixed(1)}%)
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {detectionResults !== null && detectionResults.length === 0 && (
-              <p className="mt-4 text-sm text-muted-foreground">
-                No objects detected.
+              <p className="flex justify-center align-middle gap-4">
+                <NewImg />
+                Drag and drop image, or click to select
               </p>
-            )}
+            </div>
+
+            {/* Layout is splitted into 2 parts here */}
+            <section className="lg:flex lg:gap-5">
+              <section className="lg:shrink-0 lg:grow-0 lg:w-[50%]">
+                {detectFile && (
+                  <div className="mt-4 text-sm">
+                    Selected:{" "}
+                    <span className="font-medium">{detectFile.name}</span>
+                  </div>
+                )}
+                {detectPreviewUrl && (
+                  <div className="mt-4 border rounded-md overflow-hidden relative">
+                    <img
+                      src={detectPreviewUrl}
+                      alt="Preview"
+                      className="max-w-full max-h-screen block"
+                    />
+
+                    <canvas
+                      ref={canvasRef}
+                      className="absolute top-0 left-0 max-w-full max-h-screen pointer-events-none"
+                    />
+                  </div>
+                )}
+              </section>
+
+              <section className="lg:shrink-0 lg:grow-0 lg:w-[50%]">
+                {detectionResults && detectionResults.length > 0 && (
+                  <div className="mt-4 pt-6 border-t">
+                    <h4 className="font-semibold mb-2">Detection Results:</h4>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-left">S.N.</TableHead>
+                          <TableHead className="text-left">Class ID</TableHead>
+                          <TableHead className="text-left">
+                            Object Class Name
+                          </TableHead>
+                          <TableHead>Accuracy(Percentage)</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {detectionResults.map((det, index) => (
+                          <TableRow key={index}>
+                            <TableCell>{index + 1}</TableCell>
+                            <TableCell>{det.class_id}</TableCell>
+                            <TableCell>{det.class_name}</TableCell>
+                            <TableCell>
+                              {(det.confidence * 100).toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+
+                {detectionResults !== null && detectionResults.length === 0 && (
+                  <div className="mt-4">
+                    <p className="text-sm text-muted-foreground">
+                      No objects detected.
+                    </p>
+                  </div>
+                )}
+              </section>
+            </section>
           </>
         )}
       </CardContent>
